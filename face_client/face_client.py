@@ -9,6 +9,7 @@
 # Author: Toma霆｢ Muraus (http://www.tomaz.me)
 # License: BSD
 
+import requests
 import urllib.request, urllib.parse, urllib.error
 import urllib.request, urllib.error, urllib.parse
 import os.path
@@ -331,14 +332,10 @@ class FaceClient(object):
 		if parameters:
 			data.update(parameters)
 
+		file_data = {}
+
 		# Local file is provided, use multi-part form
 		if files or buffers:
-			from .multipart import Multipart
-			form = Multipart()
-
-			for key, value in data.items():
-				form.field(key, value)
-
 			if files:
 				for i, file in enumerate(files, 1):
 					if hasattr(file, 'read'):
@@ -352,28 +349,17 @@ class FaceClient(object):
 						file = open(file, 'rb')
 						close_file = True
 
-					try:
-						form.file(name, name, file.read())
-					finally:
-						if close_file:
-							file.close()
+					file_data[name] = file
 			else:
 				for i, buffer in enumerate(buffers, 1):
 					name = 'attachment_%d' % i
-					form.file(name, name, buffer)
-			(content_type, post_data) = form.get()
-			headers = {'Content-Type': content_type}
-		else:
-			post_data = urllib.parse.urlencode(data).encode('ascii')
-			headers = {}
+				file_data[name] = buffer
 
-		request = urllib.request.Request(url, headers=headers, data=post_data)
 		try:
-			response = urllib.request.urlopen(request)
-			response = response.read()
+			response = requests.post(url, data, files=file_data)
 		except urllib.error.HTTPError as e:
 			response = e.read()
-		response_data = json.loads(response.decode('utf-8'))
+		response_data = json.loads(response.content.decode('utf-8'))
 
 		if 'status' in response_data and response_data['status'] == 'failure':
 			raise FaceError(response_data['error_code'], response_data['error_message'])
