@@ -6,11 +6,11 @@
 # For more information about the API and the return values,
 # visit the official documentation at http://www.skybiometry.com/Documentation
 #
-# Author: Tomaž Muraus (http://www.tomaz.me)
+# Author: Toma霆｢ Muraus (http://www.tomaz.me)
 # License: BSD
 
-import urllib
-import urllib2
+import urllib.request, urllib.parse, urllib.error
+import urllib.request, urllib.error, urllib.parse
 import os.path
 import warnings
 
@@ -319,7 +319,7 @@ class FaceClient(object):
 						 self.twitter_credentials['twitter_oauth_token']))})
 
 	def __append_optional_arguments(self, data, **kwargs):
-		for key, value in kwargs.iteritems():
+		for key, value in kwargs.items():
 			if value:
 				data.update({key: value})
 
@@ -333,10 +333,10 @@ class FaceClient(object):
 
 		# Local file is provided, use multi-part form
 		if files or buffers:
-			from multipart import Multipart
+			from .multipart import Multipart
 			form = Multipart()
 
-			for key, value in data.iteritems():
+			for key, value in data.items():
 				form.field(key, value)
 
 			if files:
@@ -364,16 +364,16 @@ class FaceClient(object):
 			(content_type, post_data) = form.get()
 			headers = {'Content-Type': content_type}
 		else:
-			post_data = urllib.urlencode(data)
+			post_data = urllib.parse.urlencode(data).encode('ascii')
 			headers = {}
 
-		request = urllib2.Request(url, headers=headers, data=post_data)
+		request = urllib.request.Request(url, headers=headers, data=post_data)
 		try:
-			response = urllib2.urlopen(request)
+			response = urllib.request.urlopen(request)
 			response = response.read()
-		except urllib2.HTTPError as e:
+		except urllib.error.HTTPError as e:
 			response = e.read()
-		response_data = json.loads(response)
+		response_data = json.loads(response.decode('utf-8'))
 
 		if 'status' in response_data and response_data['status'] == 'failure':
 			raise FaceError(response_data['error_code'], response_data['error_message'])
